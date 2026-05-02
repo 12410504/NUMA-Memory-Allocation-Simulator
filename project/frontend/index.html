@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NUMA Memory Allocation Simulator</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Icons (Lucide) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="brand">
+                <h2 class="brand-title">NUMA</h2>
+                <p class="brand-subtitle">Memory Allocation Simulator</p>
+            </div>
+            
+            <nav class="nav-menu">
+                <a href="#" class="nav-link active" data-target="dashboard-view">
+                    <i data-lucide="layout-dashboard"></i> Dashboard
+                </a>
+                <a href="#" class="nav-link" data-target="simulation-view">
+                    <i data-lucide="activity"></i> Simulation
+                </a>
+                <a href="#" class="nav-link" data-target="analytics-view">
+                    <i data-lucide="bar-chart-2"></i> Analytics
+                </a>
+                <a href="#" class="nav-link" data-target="architecture-view">
+                    <i data-lucide="network"></i> Architecture
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            
+            <!-- ================= VIEW: DASHBOARD ================= -->
+            <section id="dashboard-view" class="view-section active">
+                <div class="hero-section">
+                    <h1 class="hero-title">NUMA Memory Allocation Simulator</h1>
+                    <p class="hero-subtitle">Visualize memory locality and latency in distributed systems</p>
+                    <div class="hero-actions">
+                        <button class="btn btn-glow-cyan" onclick="switchTab('simulation-view')">Start Simulation</button>
+                        <button class="btn btn-outline" onclick="switchTab('architecture-view')">View Architecture</button>
+                    </div>
+                </div>
+
+                <div class="metrics-grid">
+                    <div class="metric-box">
+                        <div class="metric-header">
+                            <span>Nodes</span>
+                            <i data-lucide="cpu" class="text-cyan"></i>
+                        </div>
+                        <div class="metric-value" id="dash-nodes">4</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-header">
+                            <span>Total Memory</span>
+                            <i data-lucide="database" class="text-purple"></i>
+                        </div>
+                        <div class="metric-value">128GB</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-header">
+                            <span>Active Processes</span>
+                            <i data-lucide="activity" class="text-green"></i>
+                        </div>
+                        <div class="metric-value">42</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-header">
+                            <span>Avg Latency</span>
+                            <i data-lucide="clock" class="text-red"></i>
+                        </div>
+                        <div class="metric-value" id="dash-latency">18ns</div>
+                    </div>
+                </div>
+
+                <div class="panel topology-preview-panel">
+                    <h3 class="panel-title">Interactive NUMA Topology Preview</h3>
+                    <div class="topology-display">
+                        <div class="topology-nodes">
+                            <div class="topo-node glowing"><i data-lucide="cpu"></i><br>Node 0<br><small>32GB RAM</small></div>
+                            <div class="topo-line"></div>
+                            <div class="topo-node glowing"><i data-lucide="cpu"></i><br>Node 1<br><small>32GB RAM</small></div>
+                            <div class="topo-line"></div>
+                            <div class="topo-node glowing"><i data-lucide="cpu"></i><br>Node 2<br><small>32GB RAM</small></div>
+                            <div class="topo-line"></div>
+                            <div class="topo-node glowing"><i data-lucide="cpu"></i><br>Node 3<br><small>32GB RAM</small></div>
+                        </div>
+                        <div class="topology-legend">
+                            <span class="legend-item"><span class="color-dot bg-green"></span> Local Access</span>
+                            <span class="legend-item"><span class="color-dot bg-red"></span> Remote Access</span>
+                        </div>
+                    </div>
+
+                    <div class="quick-controls">
+                        <h4 class="sub-title">Quick Controls</h4>
+                        <div class="controls-row">
+                            <div class="checkbox-group">
+                                <label><input type="checkbox" checked> Enable Latency Simulation</label>
+                                <label><input type="checkbox"> Memory Balancing</label>
+                            </div>
+                            <div class="select-group">
+                                <label>Topology Type</label>
+                                <select>
+                                    <option>4-Node</option>
+                                    <option>8-Node</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-gradient-purple">Apply Settings</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= VIEW: SIMULATION ================= -->
+            <section id="simulation-view" class="view-section">
+                <div class="simulation-layout">
+                    <!-- Controls Sidebar -->
+                    <div class="sim-controls panel">
+                        <h3 class="panel-title text-cyan">Controls</h3>
+                        
+                        <div class="control-item">
+                            <div class="control-label">
+                                <span>Number of Nodes:</span>
+                                <span id="nodes-val-display">4</span>
+                            </div>
+                            <input type="range" id="nodes-input" min="2" max="8" value="4" class="cyan-slider">
+                        </div>
+
+                        <div class="control-item">
+                            <div class="control-label">
+                                <span>Memory per Node:</span>
+                                <span>32GB</span>
+                            </div>
+                            <input type="range" min="16" max="128" value="32" class="purple-slider">
+                        </div>
+
+                        <div class="control-item">
+                            <div class="control-label">
+                                <span>Process Count:</span>
+                                <span id="process-val-display">20</span>
+                            </div>
+                            <input type="range" id="process-input" min="5" max="50" value="20" class="green-slider">
+                        </div>
+
+                        <div class="control-item">
+                            <label>Allocation Strategy</label>
+                            <select id="policy-select" class="styled-select">
+                                <option value="local">First-Touch</option>
+                                <option value="interleaved">Interleaved</option>
+                                <option value="random">Random</option>
+                            </select>
+                        </div>
+
+                        <div class="control-actions">
+                            <button id="play-btn" class="btn btn-glow-cyan w-100">
+                                <i data-lucide="play"></i> <span id="play-btn-text">Run Simulation</span>
+                            </button>
+                            <button id="reset-btn" class="btn btn-outline w-100 mt-2">
+                                <i data-lucide="rotate-ccw"></i> Reset
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Visualization Grid -->
+                    <div class="sim-visualization panel">
+                        <h3 class="panel-title text-cyan">Visualization</h3>
+                        <div id="sim-node-container" class="sim-node-grid">
+                            <!-- Nodes populated by JS -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= VIEW: ANALYTICS ================= -->
+            <section id="analytics-view" class="view-section">
+                <div class="analytics-header">
+                    <h2 class="section-title text-cyan">Analytics & Insights</h2>
+                    <p class="section-subtitle">Performance metrics and optimization recommendations</p>
+                </div>
+
+                <div class="metrics-grid">
+                    <div class="metric-box">
+                        <div class="metric-header">
+                            <span>Total Access Time</span>
+                            <i data-lucide="trending-down" class="text-green"></i>
+                        </div>
+                        <div class="metric-value">1.24s</div>
+                        <div class="metric-trend text-red"><i data-lucide="arrow-down-right"></i> 12% vs last run</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-header">
+                            <span>Local Access Ratio</span>
+                            <i data-lucide="trending-up" class="text-cyan"></i>
+                        </div>
+                        <div class="metric-value" id="analytics-hit-ratio">68%</div>
+                        <div class="metric-trend text-green"><i data-lucide="arrow-up-right"></i> 8% vs last run</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-header">
+                            <span>Remote Access Ratio</span>
+                            <i data-lucide="activity" class="text-purple"></i>
+                        </div>
+                        <div class="metric-value" id="analytics-miss-ratio">32%</div>
+                        <div class="metric-trend text-red"><i data-lucide="arrow-down-right"></i> 5% vs last run</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-header">
+                            <span>Bottleneck Node</span>
+                            <i data-lucide="alert-triangle" class="text-orange"></i>
+                        </div>
+                        <div class="metric-value">Node 2</div>
+                    </div>
+                </div>
+
+                <div class="panel mt-4">
+                    <h3 class="panel-title text-cyan">Memory Access Heatmap</h3>
+                    <div class="heatmap-container">
+                        <table class="heatmap-table">
+                            <thead>
+                                <tr>
+                                    <th></th>
+                                    <th>0-6h</th>
+                                    <th>6-12h</th>
+                                    <th>12-18h</th>
+                                    <th>18-24h</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Node 0</td>
+                                    <td class="bg-blue-800">45%</td>
+                                    <td class="bg-cyan-800">62%</td>
+                                    <td class="bg-orange-800">78%</td>
+                                    <td class="bg-blue-900">34%</td>
+                                </tr>
+                                <tr>
+                                    <td>Node 1</td>
+                                    <td class="bg-cyan-700">58%</td>
+                                    <td class="bg-blue-800">43%</td>
+                                    <td class="bg-cyan-800">56%</td>
+                                    <td class="bg-red-800">71%</td>
+                                </tr>
+                                <tr>
+                                    <td>Node 2</td>
+                                    <td class="bg-orange-700">82%</td>
+                                    <td class="bg-red-700">91%</td>
+                                    <td class="bg-orange-800">68%</td>
+                                    <td class="bg-red-900">85%</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="charts-row mt-4">
+                    <div class="panel flex-1">
+                        <canvas id="barChart"></canvas>
+                    </div>
+                    <div class="panel flex-1">
+                        <canvas id="radarChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="panel mt-4">
+                    <h3 class="panel-title text-cyan">AI-Powered Recommendations</h3>
+                    <div class="recommendations-list">
+                        <div class="recommendation-item">
+                            <div class="rec-icon bg-cyan-alpha"><i data-lucide="lightbulb" class="text-cyan"></i></div>
+                            <div class="rec-content">
+                                <h4>Optimize Local Allocation</h4>
+                                <p>Increase local allocation on Node 2 to reduce remote access latency by ~15%</p>
+                            </div>
+                            <div class="rec-badge badge-high">High Impact</div>
+                        </div>
+                        <div class="recommendation-item">
+                            <div class="rec-icon bg-blue-alpha"><i data-lucide="check-circle" class="text-blue"></i></div>
+                            <div class="rec-content">
+                                <h4>Balance Memory Distribution</h4>
+                                <p>Redistribute processes from Node 2 to Node 3 for better load balancing</p>
+                            </div>
+                            <div class="rec-badge badge-med">Medium Impact</div>
+                        </div>
+                        <div class="recommendation-item">
+                            <div class="rec-icon bg-red-alpha"><i data-lucide="alert-triangle" class="text-red"></i></div>
+                            <div class="rec-content">
+                                <h4>Reduce Cross-Node Traffic</h4>
+                                <p>Implement process affinity to minimize inter-node communication overhead</p>
+                            </div>
+                            <div class="rec-badge badge-high">High Impact</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= VIEW: ARCHITECTURE ================= -->
+            <section id="architecture-view" class="view-section">
+                <div class="analytics-header">
+                    <h2 class="section-title text-cyan">System Architecture Explorer</h2>
+                    <p class="section-subtitle">Interactive NUMA topology visualization</p>
+                </div>
+
+                <div class="panel mt-4 arch-diagram-panel">
+                    <h3 class="panel-title text-cyan">Interactive NUMA Diagram</h3>
+                    
+                    <div class="arch-diagram-container">
+                        <!-- SVG for connecting lines -->
+                        <svg class="arch-svg-lines" width="100%" height="100%">
+                            <!-- Diagonal lines -->
+                            <line id="line-0-2" x1="25%" y1="25%" x2="75%" y2="75%" stroke="rgba(255, 255, 255, 0.2)" stroke-width="2" />
+                            <line class="flow-line" id="flow-0-2" pathLength="100" x1="25%" y1="25%" x2="75%" y2="75%" />
+                            
+                            <line id="line-1-3" x1="75%" y1="25%" x2="25%" y2="75%" stroke="rgba(255, 255, 255, 0.2)" stroke-width="2" />
+                            <line class="flow-line" id="flow-1-3" pathLength="100" x1="75%" y1="25%" x2="25%" y2="75%" />
+                            
+                            <!-- Horizontal/Vertical lines -->
+                            <line id="line-0-1" x1="25%" y1="25%" x2="75%" y2="25%" stroke="rgba(255, 255, 255, 0.2)" stroke-width="2" />
+                            <line class="flow-line" id="flow-0-1" pathLength="100" x1="25%" y1="25%" x2="75%" y2="25%" />
+                            
+                            <line id="line-2-3" x1="25%" y1="75%" x2="75%" y2="75%" stroke="rgba(255, 255, 255, 0.2)" stroke-width="2" />
+                            <line class="flow-line" id="flow-2-3" pathLength="100" x1="25%" y1="75%" x2="75%" y2="75%" />
+                            
+                            <line id="line-0-3" x1="25%" y1="25%" x2="25%" y2="75%" stroke="rgba(255, 255, 255, 0.2)" stroke-width="2" />
+                            <line class="flow-line" id="flow-0-3" pathLength="100" x1="25%" y1="25%" x2="25%" y2="75%" />
+                            
+                            <line id="line-1-2" x1="75%" y1="25%" x2="75%" y2="75%" stroke="rgba(255, 255, 255, 0.2)" stroke-width="2" />
+                            <line class="flow-line" id="flow-1-2" pathLength="100" x1="75%" y1="25%" x2="75%" y2="75%" />
+
+                            <!-- Latency Labels -->
+                            <text x="50%" y="23%" fill="#8b949e" font-size="12" text-anchor="middle">45ns</text>
+                            <text x="50%" y="77%" fill="#8b949e" font-size="12" text-anchor="middle">45ns</text>
+                            <text x="23%" y="50%" fill="#8b949e" font-size="12" text-anchor="end">40ns</text>
+                            <text x="77%" y="50%" fill="#8b949e" font-size="12" text-anchor="start">38ns</text>
+                            
+                            <text x="35%" y="45%" fill="#8b949e" font-size="12" text-anchor="middle">50ns</text>
+                            <text x="65%" y="45%" fill="#8b949e" font-size="12" text-anchor="middle">50ns</text>
+                        </svg>
+
+                        <!-- Nodes Grid -->
+                        <div class="arch-node-grid">
+                            <div class="arch-node" id="arch-node-0" style="grid-area: top-left;">
+                                <i data-lucide="cpu"></i>
+                                <div class="font-bold">Node 0</div>
+                                <div class="text-xs">8 cores</div>
+                            </div>
+                            <div class="arch-node" id="arch-node-1" style="grid-area: top-right;">
+                                <i data-lucide="cpu"></i>
+                                <div class="font-bold">Node 1</div>
+                                <div class="text-xs">8 cores</div>
+                            </div>
+                            <div class="arch-node" id="arch-node-3" style="grid-area: bottom-left;">
+                                <i data-lucide="cpu"></i>
+                                <div class="font-bold">Node 3</div>
+                                <div class="text-xs">8 cores</div>
+                            </div>
+                            <div class="arch-node" id="arch-node-2" style="grid-area: bottom-right;">
+                                <i data-lucide="cpu"></i>
+                                <div class="font-bold">Node 2</div>
+                                <div class="text-xs">8 cores</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="arch-legend mt-4">
+                        <span class="legend-item"><span class="color-dot bg-secondary"></span> Connection Path</span>
+                        <span class="legend-item"><span class="color-dot bg-cyan"></span> Data Flow</span>
+                        <span class="legend-item">Latency (ns)</span>
+                    </div>
+                </div>
+
+                <div class="panel mt-4">
+                    <h3 class="panel-title text-cyan">Timeline Playback</h3>
+                    <div class="timeline-container">
+                        <button class="btn timeline-play-btn" id="timeline-play-btn">
+                            <i data-lucide="play" fill="currentColor"></i>
+                        </button>
+                        
+                        <div class="timeline-track-container">
+                            <!-- Track Line -->
+                            <div class="timeline-line"></div>
+                            
+                            <!-- Timeline Points -->
+                            <div class="timeline-points">
+                                <div class="timeline-point">
+                                    <div class="point-dot" id="timeline-dot-0"></div>
+                                    <div class="point-label">Node 0</div>
+                                    <div class="point-sub" id="timeline-sub-0">0% utilized</div>
+                                </div>
+                                <div class="timeline-point">
+                                    <div class="point-dot" id="timeline-dot-1"></div>
+                                    <div class="point-label">Node 1</div>
+                                    <div class="point-sub" id="timeline-sub-1">0% utilized</div>
+                                </div>
+                                <div class="timeline-point">
+                                    <div class="point-dot" id="timeline-dot-2"></div>
+                                    <div class="point-label">Node 2</div>
+                                    <div class="point-sub" id="timeline-sub-2">0% utilized</div>
+                                </div>
+                                <div class="timeline-point">
+                                    <div class="point-dot" id="timeline-dot-3"></div>
+                                    <div class="point-label">Node 3</div>
+                                    <div class="point-sub" id="timeline-sub-3">0% utilized</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>
